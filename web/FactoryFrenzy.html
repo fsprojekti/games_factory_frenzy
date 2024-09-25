@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Factory Job Layout</title>
+    <style>
+        canvas {
+            border: 1px solid #000;
+            background-color: #f8f8f8;
+        }
+        #gameInfo {
+            margin-top: 20px;
+            font-family: Arial, sans-serif;
+        }
+        .job-spot {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/web3/dist/web3.min.js"></script>
+</head>
+<body>
+
+<canvas id="factoryCanvas" width="800" height="800"></canvas>
+
+<div id="gameInfo"></div>
+
+<script>
+    const canvas = document.getElementById('factoryCanvas');
+    const ctx = canvas.getContext('2d');
+    const gridSize = 6; // 5x5 grid for job spots
+    const cellSize = canvas.width / gridSize;
+
+    // Contract ABI (replace this with the ABI of your deployed contract)
+    const contractABI =  [
+        {
+            "inputs": [],
+            "stateMutability": "nonpayable",
+            "type": "constructor"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "sender",
+                    "type": "address"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "tokenId",
+                    "type": "uint256"
+                },
+                {
+                    "internalType": "address",
+                    "name": "owner",
+                    "type": "address"
+                }
+            ],
+            "name": "ERC721IncorrectOwner",
+            "type": "error"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "operator",
+                    "type": "address"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "tokenId",
+                    "type": "uint256"
+                }
+            ],
+            "name": "ERC721InsufficientApproval",
+            "type": "error"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "approver",
+                    "type": "address"
+                }
+            ],
+            "name": "ERC721InvalidApprover",
+            "type": "error"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "operator",
+                    "type": "address"
+                }
+            ],
+            "name": "ERC721InvalidOperator",
+            "type": "error"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "owner",
+                    "type": "address"
+                }
+            ],
+            "name": "ERC721InvalidOwner",
+            "type": "error"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "receiver",
+                    "type": "address"
+                }
+            ],
+            "name": "ERC721InvalidReceiver",
+            "type": "error"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "sender",
+                    "type": "address"
+                }
+            ],
+            "name": "ERC721InvalidSender",
+            "type": "error"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "tokenId",
+                    "type": "uint256"
+                }
+            ],
+            "name": "ERC721NonexistentToken",
+            "type": "error"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "owner",
+                    "type": "address"
+                }
+            ],
+            "name": "OwnableInvalidOwner",
+            "type": "error"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "account",
+                    "type": "address"
+                }
+            ],
+            "name": "OwnableUnauthorizedAccount",
+            "type": "error"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "owner",
+                    "type": "address"
+                },
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "approved",
+                    "type": "address"
+                },
+                {
+                    "indexed": true,
+                    "internalType": "uint256",
+                    "name": "tokenId",
+                    "type": "uint256"
+                }
+            ],
+            "name": "Approval",
+            "type": "event"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "owner",
+                    "type": "address"
+                },
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "operator",
+                    "type": "address"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "bool",
+                    "name": "approved",
+                    "type": "bool"
+                }
+            ],
+            "name": "ApprovalForAll",
+            "type": "event"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "previousOwner",
+                    "type": "address"
+                },
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "newOwner",
+                    "type": "address"
+                }
+            ],
+            "name": "OwnershipTransferred",
+            "type": "event"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "from",
+                    "type": "address"
+                },
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "to",
+                    "type": "address"
+                },
+                {
+                    "indexed": true,
+                    "internalType": "uint256",
+                    "name": "tokenId",
+                    "type": "uint256"
+                }
+            ],
+            "name": "Transfer",
+            "type": "event"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "to",
+                    "type": "address"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "tokenId",
+                    "type": "uint256"
+                }
+            ],
+            "name": "approve",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "string",
+                    "name": "jobSpotId",
+                    "type": "string"
+                }
+            ],
+            "name": "availableJobs",
+            "outputs": [
+                {
+                    "internalType": "uint8",
+                    "name": "",
+                    "type": "uint8"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "owner",
+                    "type": "address"
+                }
+            ],
+            "name": "balanceOf",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "string",
+                    "name": "jobSpotId",
+                    "type": "string"
+                },
+                {
+                    "internalType": "string",
+                    "name": "jobSpotUUID",
+                    "type": "string"
+                }
+            ],
+            "name": "collectAllJobs",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "tokenId",
+                    "type": "uint256"
+                }
+            ],
+            "name": "getApproved",
+            "outputs": [
+                {
+                    "internalType": "address",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "size",
+                    "type": "uint256"
+                }
+            ],
+            "name": "initialize",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "owner",
+                    "type": "address"
+                },
+                {
+                    "internalType": "address",
+                    "name": "operator",
+                    "type": "address"
+                }
+            ],
+            "name": "isApprovedForAll",
+            "outputs": [
+                {
+                    "internalType": "bool",
+                    "name": "",
+                    "type": "bool"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "string",
+                    "name": "",
+                    "type": "string"
+                }
+            ],
+            "name": "jobSpots",
+            "outputs": [
+                {
+                    "internalType": "string",
+                    "name": "UUID",
+                    "type": "string"
+                },
+                {
+                    "internalType": "uint8",
+                    "name": "jobsIssued",
+                    "type": "uint8"
+                },
+                {
+                    "internalType": "uint8",
+                    "name": "jobsCollected",
+                    "type": "uint8"
+                },
+                {
+                    "internalType": "address",
+                    "name": "collector",
+                    "type": "address"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "name",
+            "outputs": [
+                {
+                    "internalType": "string",
+                    "name": "",
+                    "type": "string"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "owner",
+            "outputs": [
+                {
+                    "internalType": "address",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "tokenId",
+                    "type": "uint256"
+                }
+            ],
+            "name": "ownerOf",
+            "outputs": [
+                {
+                    "internalType": "address",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "renounceOwnership",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "from",
+                    "type": "address"
+                },
+                {
+                    "internalType": "address",
+                    "name": "to",
+                    "type": "address"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "tokenId",
+                    "type": "uint256"
+                }
+            ],
+            "name": "safeTransferFrom",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "from",
+                    "type": "address"
+                },
+                {
+                    "internalType": "address",
+                    "name": "to",
+                    "type": "address"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "tokenId",
+                    "type": "uint256"
+                },
+                {
+                    "internalType": "bytes",
+                    "name": "data",
+                    "type": "bytes"
+                }
+            ],
+            "name": "safeTransferFrom",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "operator",
+                    "type": "address"
+                },
+                {
+                    "internalType": "bool",
+                    "name": "approved",
+                    "type": "bool"
+                }
+            ],
+            "name": "setApprovalForAll",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "string",
+                    "name": "jobSpotId",
+                    "type": "string"
+                },
+                {
+                    "internalType": "string",
+                    "name": "jobSpotUUID",
+                    "type": "string"
+                }
+            ],
+            "name": "setJobSpotUUID",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "bytes4",
+                    "name": "interfaceId",
+                    "type": "bytes4"
+                }
+            ],
+            "name": "supportsInterface",
+            "outputs": [
+                {
+                    "internalType": "bool",
+                    "name": "",
+                    "type": "bool"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "symbol",
+            "outputs": [
+                {
+                    "internalType": "string",
+                    "name": "",
+                    "type": "string"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "tokenId",
+                    "type": "uint256"
+                }
+            ],
+            "name": "tokenURI",
+            "outputs": [
+                {
+                    "internalType": "string",
+                    "name": "",
+                    "type": "string"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "totalJobsIssued",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "totalJobs",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "totalSupply",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "from",
+                    "type": "address"
+                },
+                {
+                    "internalType": "address",
+                    "name": "to",
+                    "type": "address"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "tokenId",
+                    "type": "uint256"
+                }
+            ],
+            "name": "transferFrom",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "newOwner",
+                    "type": "address"
+                }
+            ],
+            "name": "transferOwnership",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        }
+    ];
+
+    // Contract address (replace with the actual deployed contract address)
+    const contractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
+
+    // List of job spot IDs in the grid
+    const jobSpots = [
+        'A1', 'A2', 'A3', 'A4', 'A5',
+        'B1', 'B2', 'B3', 'B4', 'B5',
+        'C1', 'C2', 'C3', 'C4', 'C5',
+        'D1', 'D2', 'D3', 'D4', 'D5',
+        'E1', 'E2', 'E3', 'E4', 'E5'
+    ];
+
+    // Connect to the local Ethereum node (replace with your node URL if different)
+    const web3 = new Web3('http://localhost:8545');
+
+    // Web3 connection check
+    async function checkWeb3Connection() {
+        try {
+            const isConnected = await web3.eth.net.isListening();
+            if (isConnected) {
+                console.log('Web3 is successfully connected to the local node.');
+            } else {
+                console.error('Web3 is not connected.');
+            }
+
+            const accounts = await web3.eth.getAccounts();
+            if (accounts.length > 0) {
+                console.log(`Connected accounts: ${accounts}`);
+            } else {
+                console.error('No accounts found.');
+            }
+
+        } catch (error) {
+            console.error('Error connecting to Web3:', error);
+        }
+    }
+
+    // Connect to the deployed contract
+    const contract = new web3.eth.Contract(contractABI, contractAddress);
+
+    // Function to draw the factory grid
+    function drawGrid() {
+        ctx.strokeStyle = '#ccc';
+        for (let i = 0; i <= gridSize; i++) {
+            ctx.beginPath();
+            ctx.moveTo(i * cellSize, 0);
+            ctx.lineTo(i * cellSize, canvas.height);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(0, i * cellSize);
+            ctx.lineTo(canvas.width, i * cellSize);
+            ctx.stroke();
+        }
+    }
+
+    // Function to draw job spots
+    async function drawJobSpots() {
+        // Loop through all job spots and fetch available jobs
+        for (let i = 0; i < jobSpots.length; i++) {
+            const jobSpotId = jobSpots[i];
+            const availableJobs = await fetchAvailableJobs(jobSpotId);
+            const collector = await fetchCollector(jobSpotId);
+            drawJobSpot(jobSpotId, availableJobs, collector);
+        }
+    }
+
+    // Function to fetch available jobs from the contract for a job spot
+    async function fetchAvailableJobs(jobSpotId) {
+        try {
+            const availableJobs = await contract.methods.availableJobs(jobSpotId).call();
+            return availableJobs;
+        } catch (error) {
+            console.error(`Error fetching available jobs for ${jobSpotId}:`, error);
+            return 0;
+        }
+    }
+
+    // Function to fetch the collector for a job spot
+    async function fetchCollector(jobSpotId) {
+        try {
+            const collectorData = await contract.methods.jobSpots(jobSpotId).call();
+            return collectorData.collector;
+        } catch (error) {
+            console.error(`Error fetching collector for ${jobSpotId}:`, error);
+            return null;
+        }
+    }
+
+    // Function to draw a specific job spot on the grid
+    function drawJobSpot(jobSpotId, availableJobs, collector) {
+        const rowIndex = jobSpotId.charCodeAt(0) - 65; // Convert 'A' to 0, 'B' to 1, etc.
+        const colIndex = parseInt(jobSpotId[1]) - 1;
+
+        const x = colIndex * cellSize + cellSize / 2;
+        const y = rowIndex * cellSize + cellSize / 2;
+
+        // Draw the job spot circle
+        if (!collector || collector === '0x0000000000000000000000000000000000000000') {
+            ctx.fillStyle = '#a2a1a1'; // Non-occupied job spot should be gray
+        } else {
+            ctx.fillStyle = availableJobs > 0 ? 'green' : 'red'; // Green if jobs are available, red if not
+        }
+
+        ctx.beginPath();
+        ctx.arc(x+65, y, 25, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.strokeStyle = '#000';
+        ctx.stroke();
+
+        // Draw the number of available jobs centered in the circle
+        ctx.fillStyle = '#000';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(availableJobs, x, y+2);
+    }
+
+    // Draw the initial grid and fetch job data
+    async function initialize() {
+        await checkWeb3Connection();
+        drawGrid(); // Draw the factory grid
+        drawJobSpots(); // Fetch and draw job spots with available job data
+    }
+
+    // Initialize the page
+    initialize();
+</script>
+
+</body>
+</html>

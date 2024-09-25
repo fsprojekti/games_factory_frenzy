@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AGV Largest Shape Game with Four Players</title>
+    <style>
+        canvas {
+            border: 1px solid #000;
+            background-color: #f8f8f8;
+        }
+
+        #gameInfo {
+            margin-top: 20px;
+            font-family: Arial, sans-serif;
+        }
+
+        .player-info {
+            margin-bottom: 10px;
+        }
+
+        .player-name {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .player-area {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="gameCanvas" width="800" height="800"></canvas>
+
+<div id="gameInfo"></div>
+
+<!-- Include TinyColor -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tinycolor/1.4.2/tinycolor.min.js"></script>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const gridSize = 6;
+    const cellSize = canvas.width / gridSize;
+
+    // Tags on the grid
+    const tags = [
+        {id: 'A1', x: 1.5, y: 1.5, collectedBy: null},
+        {id: 'A2', x: 1.5, y: 2.5, collectedBy: null},
+        {id: 'A3', x: 1.5, y: 3.5, collectedBy: null},
+        {id: 'A4', x: 1.5, y: 4.5, collectedBy: null},
+        {id: 'A5', x: 1.5, y: 5.5, collectedBy: null},
+        {id: 'B1', x: 2.5, y: 1.5, collectedBy: null},
+        {id: 'B2', x: 2.5, y: 2.5, collectedBy: null},
+        {id: 'B3', x: 2.5, y: 3.5, collectedBy: null},
+        {id: 'B4', x: 2.5, y: 4.5, collectedBy: null},
+        {id: 'B5', x: 2.5, y: 5.5, collectedBy: null},
+        {id: 'C1', x: 3.5, y: 1.5, collectedBy: null},
+        {id: 'C2', x: 3.5, y: 2.5, collectedBy: null},
+        {id: 'C3', x: 3.5, y: 3.5, collectedBy: null},
+        {id: 'C4', x: 3.5, y: 4.5, collectedBy: null},
+        {id: 'C5', x: 3.5, y: 5.5, collectedBy: null},
+        {id: 'D1', x: 4.5, y: 1.5, collectedBy: null},
+        {id: 'D2', x: 4.5, y: 2.5, collectedBy: null},
+        {id: 'D3', x: 4.5, y: 3.5, collectedBy: null},
+        {id: 'D4', x: 4.5, y: 4.5, collectedBy: null},
+        {id: 'D5', x: 4.5, y: 5.5, collectedBy: null},
+        {id: 'E1', x: 5.5, y: 1.5, collectedBy: null},
+        {id: 'E2', x: 5.5, y: 2.5, collectedBy: null},
+        {id: 'E3', x: 5.5, y: 3.5, collectedBy: null},
+        {id: 'E4', x: 5.5, y: 4.5, collectedBy: null},
+        {id: 'E5', x: 5.5, y: 5.5, collectedBy: null}
+    ];
+
+    // Players' collected tags
+    const players = [
+        {
+            id: 'Player 1',
+            color: 'red',
+            collectedTags: [],
+            area: 0
+        },
+        {
+            id: 'Player 2',
+            color: 'blue',
+            collectedTags: [],
+            area: 0
+        },
+        {
+            id: 'Player 3',
+            color: 'green',
+            collectedTags: [],
+            area: 0
+        },
+        {
+            id: 'Player 4',
+            color: 'orange',
+            collectedTags: [],
+            area: 0
+        }
+    ];
+
+    // Find tag by ID
+    function getTagById(id) {
+        return tags.find(tag => tag.id === id);
+    }
+
+    // Function to build the graph
+    function buildGraph(points) {
+        const graph = {};
+        points.forEach(point => {
+            graph[point.id] = [];
+            points.forEach(otherPoint => {
+                if (point.id !== otherPoint.id && areNeighbors(point, otherPoint)) {
+                    graph[point.id].push(otherPoint.id);
+                }
+            });
+        });
+        return graph;
+    }
+
+    // Function to find all cycles in the graph
+    function findAllCycles(graph) {
+        const cycles = [];
+        const keys = Object.keys(graph);
+
+        for (let i = 0; i < keys.length; i++) {
+            const startNodeId = keys[i];
+            const stack = [];
+            const blockedSet = new Set();
+            simpleCycles(startNodeId, startNodeId, graph, stack, blockedSet, cycles);
+        }
+
+        return removeDuplicateCycles(cycles);
+    }
+
+    // Simplified Johnson's algorithm for finding all simple cycles
+    function simpleCycles(startNodeId, currentNodeId, graph, stack, blockedSet, cycles) {
+        stack.push(currentNodeId);
+        blockedSet.add(currentNodeId);
+
+        for (const neighborId of graph[currentNodeId]) {
+            if (neighborId === startNodeId && stack.length >= 3) {
+                // Found a cycle
+                cycles.push([...stack]);
+            } else if (!blockedSet.has(neighborId) && neighborId > startNodeId) {
+                simpleCycles(startNodeId, neighborId, graph, stack, blockedSet, cycles);
+            }
+        }
+
+        blockedSet.delete(currentNodeId);
+        stack.pop();
+    }
+
+    // Function to remove duplicate cycles
+    function removeDuplicateCycles(cycles) {
+        const uniqueCycles = [];
+        const seen = new Set();
+
+        for (const cycle of cycles) {
+            const sortedCycle = [...cycle].sort();
+            const key = sortedCycle.join(',');
+
+            if (!seen.has(key)) {
+                seen.add(key);
+                uniqueCycles.push(cycle);
+            }
+        }
+
+        return uniqueCycles;
+    }
+
+    // Function to filter cycles with forbidden points inside
+    function filterValidCycles(cycles, forbiddenPoints) {
+        return cycles.filter(cycleIds => {
+            const cyclePoints = cycleIds.map(id => getTagById(id));
+            return !forbiddenPoints.some(fp => isPointInsidePolygon(fp, cyclePoints));
+        });
+    }
+
+    // Adjusted areNeighbors function
+    function areNeighbors(pointA, pointB) {
+        const dx = Math.abs(pointA.x - pointB.x);
+        const dy = Math.abs(pointA.y - pointB.y);
+        const epsilon = 0.01;
+
+        if (dx < epsilon && dy < epsilon) {
+            return false;
+        }
+
+        return dx <= 1.0 + epsilon && dy <= 1.0 + epsilon && dx + dy > epsilon;
+    }
+
+    // Point-in-polygon test using the ray-casting algorithm
+    function isPointInsidePolygon(point, polygon) {
+        let inside = false;
+        const x = point.x;
+        const y = point.y;
+
+        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+            const xi = polygon[i].x, yi = polygon[i].y;
+            const xj = polygon[j].x, yj = polygon[j].y;
+
+            const intersect = ((yi > y) !== (yj > y)) &&
+                (x < ((xj - xi) * (y - yi)) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
+        }
+
+        return inside;
+    }
+
+    // Function to calculate the area of a polygon using the Shoelace Theorem
+    function calculatePolygonArea(points) {
+        let area = 0;
+        const numPoints = points.length;
+
+        for (let i = 0; i < numPoints; i++) {
+            const x1 = points[i].x;
+            const y1 = points[i].y;
+            const x2 = points[(i + 1) % numPoints].x;
+            const y2 = points[(i + 1) % numPoints].y;
+            area += (x1 * y2) - (x2 * y1);
+        }
+
+        return Math.abs(area / 2);
+    }
+
+    // Function to remove cycles that are subsets of larger cycles
+    function removeSubsetSets(sets) {
+        // First, sort the cycles by length in descending order
+        sets.sort((a, b) => b.length - a.length);
+
+        const uniqueSets = [];
+
+        for (let i = 0; i < sets.length; i++) {
+            let isSubset = false;
+            const currentSet = new Set(sets[i]);
+            // Check if currentSet is a subset of any of the previously added sets
+            for (let j = 0; j < uniqueSets.length; j++) {
+                const comparedSet = new Set(uniqueSets[j]);
+                if (isSuperset(comparedSet, currentSet)) {
+                    // currentSet is a subset of comparedSet
+                    isSubset = true;
+                    break;
+                }
+            }
+            if (!isSubset) {
+                // Add currentSet to uniqueSets
+                uniqueSets.push(sets[i]);
+            }
+        }
+
+        return uniqueSets;
+    }
+
+    // Helper function to check if setA is a superset of setB
+    function isSuperset(setA, setB) {
+        for (let elem of setB) {
+            if (!setA.has(elem)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+
+    function drawLargestShape(player) {
+        const points = player.collectedTags.map(tagId => getTagById(tagId)).filter(Boolean);
+
+        if (points.length < 3) {
+            player.area = 0;
+            return;
+        }
+
+        const forbiddenPoints = tags.filter(tag => tag.collectedBy && tag.collectedBy !== player.id);
+
+        let graph = buildGraph(points);
+        if (player.id === 'Player 4') {
+            console.log("Graph: ", graph);
+        }
+        let cycles = findAllCycles(graph);
+        if (player.id === 'Player 4') {
+            console.log("Cycles: ", cycles);
+        }
+        // Remove subset cycles
+        cycles = removeSubsetSets(cycles);
+        if (player.id === 'Player 4') {
+            console.log("Cycles after removing subsets: ", cycles);
+        }
+
+        let validCycles = filterValidCycles(cycles, forbiddenPoints);
+
+        // Calculate total area
+        let totalArea = 0;
+
+        validCycles.forEach(cycleIds => {
+            let cyclePoints = cycleIds.map(id => getTagById(id));
+
+            // Order the points correctly
+            cyclePoints = orderPolygonPoints(cyclePoints);
+
+            // Calculate area of the cycle
+            const area = calculatePolygonArea(cyclePoints);
+            totalArea += area;
+
+            // Draw the shape
+            ctx.beginPath();
+            cyclePoints.forEach((point, index) => {
+                const px = (point.x - 1) * cellSize + cellSize / 2;
+                const py = (point.y - 1) * cellSize + cellSize / 2;
+                if (index === 0) {
+                    ctx.moveTo(px, py);
+                } else {
+                    ctx.lineTo(px, py);
+                }
+            });
+            ctx.closePath();
+            ctx.fillStyle = tinycolor(player.color).brighten(10);
+            ctx.globalAlpha = 0.5;
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+        });
+
+        player.area = totalArea;
+    }
+
+
+    // Function to order the points of a polygon correctly
+    function orderPolygonPoints(points) {
+        // Calculate the centroid of the polygon
+        const centroid = points.reduce(
+            (acc, point) => {
+                acc.x += point.x;
+                acc.y += point.y;
+                return acc;
+            },
+            {x: 0, y: 0}
+        );
+
+        centroid.x /= points.length;
+        centroid.y /= points.length;
+
+        // Calculate the angle of each point from the centroid
+        points.forEach(point => {
+            point.angle = Math.atan2(point.y - centroid.y, point.x - centroid.x);
+        });
+
+        // Sort the points based on the angle
+        points.sort((a, b) => a.angle - b.angle);
+
+        // Remove the temporary 'angle' property
+        points.forEach(point => {
+            delete point.angle;
+        });
+
+        return points;
+    }
+
+
+    // Draw grid
+    function drawGrid() {
+        ctx.strokeStyle = '#ccc';
+        for (let i = 0; i <= gridSize; i++) {
+            ctx.beginPath();
+            ctx.moveTo(i * cellSize, 0);
+            ctx.lineTo(i * cellSize, canvas.height);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(0, i * cellSize);
+            ctx.lineTo(canvas.width, i * cellSize);
+            ctx.stroke();
+        }
+    }
+
+    // Draw tags
+    function drawTags() {
+        tags.forEach(tag => {
+            let tagColor = 'rgba(65,65,65,0.35)'; // Default color for uncollected tags
+
+            // Check if any player has collected this tag
+            players.forEach(player => {
+                if (player.collectedTags.includes(tag.id)) {
+                    tagColor = player.color;
+                }
+            });
+
+            const x = (tag.x - 1) * cellSize + cellSize / 2;
+            const y = (tag.y - 1) * cellSize + cellSize / 2;
+            ctx.fillStyle = tagColor;
+            ctx.beginPath();
+            ctx.arc(x, y, 18, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.strokeStyle = '#000';
+            ctx.stroke();
+            ctx.fillStyle = '#000';
+            ctx.font = '20px Arial';
+            ctx.fillText(tag.id, x - 12, y + 7);
+        });
+    }
+
+    // Main Draw Function
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawGrid();
+        players.forEach(drawLargestShape); // Draw the shapes for each player
+        drawTags();
+        updateGameInfo();
+    }
+
+    // Function to update game information (areas)
+    function updateGameInfo() {
+        const gameInfoDiv = document.getElementById('gameInfo');
+        gameInfoDiv.innerHTML = '';
+
+        players.forEach(player => {
+            const playerDiv = document.createElement('div');
+            playerDiv.className = 'player-info';
+
+            const playerNameSpan = document.createElement('span');
+            playerNameSpan.className = 'player-name';
+            playerNameSpan.style.color = player.color;
+            playerNameSpan.textContent = `${player.id}: `;
+
+            const playerAreaSpan = document.createElement('span');
+            playerAreaSpan.className = 'player-area';
+            playerAreaSpan.textContent = `Area Covered: ${player.area.toFixed(2)}`;
+
+            playerDiv.appendChild(playerNameSpan);
+            playerDiv.appendChild(playerAreaSpan);
+            gameInfoDiv.appendChild(playerDiv);
+        });
+    }
+
+    // Function to add a tag and redraw
+    function addTagAndRecalculate(playerId, tagId) {
+        const player = players.find(p => p.id === playerId);
+        if (!player) {
+            console.error('Player not found');
+            return;
+        }
+
+        const tag = getTagById(tagId);
+        if (!tag) {
+            console.error('Tag not found');
+            return;
+        }
+
+        if (!player.collectedTags.includes(tagId)) {
+            player.collectedTags.push(tagId);
+            tag.collectedBy = player.id;  // Mark the tag as collected by the player
+        }
+
+        draw();  // Redraw everything after adding a new tag
+    }
+
+    // Initialize game state and draw
+    draw();
+
+    // Simulation function
+    async function sim() {
+        let player1tags = [
+            'A1', 'A2', 'B1', 'B2'
+        ];
+
+        let player2tags = [
+            'A5', 'B5', 'C5', 'C4', 'B4','B3'
+        ];
+
+        let player3tags = [
+            'C2', 'C3', 'D3'
+        ];
+
+        let player4tags = [
+            'E5', 'D5', 'D4','E2','E3','E4','D2'
+        ];
+
+        // Add tags for Player 1
+        for (const tag of player1tags) {
+            addTagAndRecalculate('Player 1', tag);
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        // Add tags for Player 2
+        for (const tag of player2tags) {
+            addTagAndRecalculate('Player 2', tag);
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        // Add tags for Player 3
+        for (const tag of player3tags) {
+            addTagAndRecalculate('Player 3', tag);
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        // Add tags for Player 4
+        for (const tag of player4tags) {
+            addTagAndRecalculate('Player 4', tag);
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+    }
+
+    sim();
+
+</script>
+
+</body>
+</html>
