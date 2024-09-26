@@ -795,6 +795,13 @@
 
     // Draw the initial grid and fetch job data
     async function initialize() {
+        //Fetch files
+        const file1 = await fetch('../ignition/deployments/chain-1337/deployed_addresses.json')
+        let t=0;
+
+
+
+
         await checkWeb3Connection();
         drawGrid(); // Draw the factory grid
         drawJobSpots(); // Fetch and draw job spots with available job data
