@@ -4,7 +4,6 @@ const { ethers } = require("hardhat");
 describe("FactoryFrenzy with Prodex Token", function () {
     let factoryFrenzy;
     let prodexToken;
-    let jobs;
     let owner;
     let addr1;
     let addr2;
@@ -25,7 +24,6 @@ describe("FactoryFrenzy with Prodex Token", function () {
 
         // Fund the FactoryFrenzy contract with Prodex tokens for rewards
         await prodexToken.transfer(factoryFrenzy.target, ethers.parseUnits("500000", 18)); // Transfer 500,000 Prodex tokens to the contract
-
     });
 
     // Test the successful deployment of the Prodex token and FactoryFrenzy contract
@@ -95,9 +93,6 @@ describe("FactoryFrenzy with Prodex Token", function () {
 
         console.log(`Random JobSpot selected: ${jobSpotId}`);
 
-        // Set a random UUID for this jobSpot (you can customize the UUID logic)
-        const jobSpotUUID = "empty";
-
         // Fetch the jobSpot details before collection
         const jobSpotBefore = await factoryFrenzy.jobSpots(jobSpotId);
         const reward = jobSpotBefore.reward;
@@ -105,7 +100,7 @@ describe("FactoryFrenzy with Prodex Token", function () {
         console.log(`Reward at ${jobSpotId}: ${ethers.formatEther(reward)}`);
 
         // Simulate the user collecting the reward from this jobSpot
-        await factoryFrenzy.connect(user).collectJob(jobSpotId, jobSpotUUID);
+        await factoryFrenzy.connect(user).collectJob(jobSpotId);
 
         // Check that the user received the correct amount of Prodex tokens
         const userTokenBalance = await prodexToken.balanceOf(user.address);
@@ -120,23 +115,8 @@ describe("FactoryFrenzy with Prodex Token", function () {
         console.log(`Collector for ${jobSpotId}: ${jobSpotAfter.collector}`);
     });
 
-    it("should print the number of available rewards for each jobSpot in matrix style", async function () {
-        console.log("Printing available rewards in matrix format:");
-
-        for (let i = 0; i < gridSize; i++) {
-            let row = "";
-            for (let j = 0; j < gridSize; j++) {
-                // Create the job ID like in the initialize function (e.g., A1, B2, etc.)
-                const jobId = String.fromCharCode(65 + i) + (j + 1).toString();
-
-                // Call the getJobReward function to get the reward for each job
-                const availableReward = await factoryFrenzy.getJobReward(jobId);
-
-                // Add the reward to the row string
-                row += `${ethers.formatEther(availableReward).toString().padStart(5, " ")} `;
-            }
-            // Print the entire row for the current grid row
-            console.log(`Row ${String.fromCharCode(65 + i)}: ${row}`);
-        }
+    it("should print the total rewards of all job spots", async function () {
+        const totalRewards = await factoryFrenzy.totalRewards();
+        console.log("Total rewards across all job spots: ", ethers.formatEther(totalRewards));
     });
 });
