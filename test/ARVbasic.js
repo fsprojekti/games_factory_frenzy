@@ -10,7 +10,8 @@ let abiProdexToken = require('../ignition/deployments/chain-1337/artifacts/Prode
 // Initialize the Web3 provider using localhost (Hardhat or Ganache)
 const web3 = new Web3('http://127.0.0.1:8545');
 
-const account = web3.eth.accounts.privateKeyToAccount("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d");
+const account = web3.eth.accounts.privateKeyToAccount(require('../.secret.json').privateKey);
+
 web3.eth.accounts.wallet.add(account);
 
 const contractProdexToken = new Contract(abiProdexToken, addressProdexToken, web3);
