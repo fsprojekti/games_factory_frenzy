@@ -74,9 +74,13 @@ contract FactoryFrenzy {
 
     /**
      * @dev Returns the reward for a job at a given job spot.
-     * This represents the value that an ARV will collect when they pick up the job.
+     * If the job has already been collected, the reward will be 0.
+     * @param jobSpotId The ID of the job spot to query.
      */
     function getJobReward(uint8 jobSpotId) public view returns (uint256) {
+        if (jobSpots[jobSpotId].collector != address(0)) {
+            return 0;  // Return 0 if the job has already been collected
+        }
         return jobSpots[jobSpotId].reward;
     }
 

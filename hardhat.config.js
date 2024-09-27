@@ -9,11 +9,11 @@ module.exports = {
     },
     sepolia: {
       url: 'https://sepolia.infura.io/v3/5b5e5c71a5ed48a1bd63956d8e6ccb5e',
-      accounts: [require('.secret.json').privateKey],
+      accounts: [require('./.secret.json').privateKey],
     },
     amony:{
       url: 'https://rpc-amoy.polygon.technology/',
-      accounts: [require('.secret.json').privateKey],
+      accounts: [require('./.secret.json').privateKey],
     }
   }
 };

@@ -16,6 +16,11 @@
             font-weight: bold;
             margin-right: 10px;
         }
+        #scores {
+            margin-top: 20px;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/web3/dist/web3.min.js"></script>
 </head>
@@ -24,6 +29,7 @@
 <canvas id="factoryCanvas" width="800" height="800"></canvas>
 
 <div id="gameInfo"></div>
+<div id="scores">Scores: <div id="playerScores"></div></div>
 
 <script>
     const canvas = document.getElementById('factoryCanvas');
@@ -45,28 +51,6 @@
                 "type": "constructor"
             },
             {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "owner",
-                        "type": "address"
-                    }
-                ],
-                "name": "OwnableInvalidOwner",
-                "type": "error"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "account",
-                        "type": "address"
-                    }
-                ],
-                "name": "OwnableUnauthorizedAccount",
-                "type": "error"
-            },
-            {
                 "anonymous": false,
                 "inputs": [
                     {
@@ -77,9 +61,9 @@
                     },
                     {
                         "indexed": false,
-                        "internalType": "string",
+                        "internalType": "uint8",
                         "name": "jobSpotId",
-                        "type": "string"
+                        "type": "uint8"
                     },
                     {
                         "indexed": false,
@@ -92,35 +76,11 @@
                 "type": "event"
             },
             {
-                "anonymous": false,
                 "inputs": [
                     {
-                        "indexed": true,
-                        "internalType": "address",
-                        "name": "previousOwner",
-                        "type": "address"
-                    },
-                    {
-                        "indexed": true,
-                        "internalType": "address",
-                        "name": "newOwner",
-                        "type": "address"
-                    }
-                ],
-                "name": "OwnershipTransferred",
-                "type": "event"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
+                        "internalType": "uint8",
                         "name": "jobSpotId",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "jobSpotUUID",
-                        "type": "string"
+                        "type": "uint8"
                     }
                 ],
                 "name": "collectJob",
@@ -146,9 +106,9 @@
                 "name": "getAllJobSpots",
                 "outputs": [
                     {
-                        "internalType": "string[]",
+                        "internalType": "uint8[]",
                         "name": "",
-                        "type": "string[]"
+                        "type": "uint8[]"
                     }
                 ],
                 "stateMutability": "view",
@@ -157,9 +117,9 @@
             {
                 "inputs": [
                     {
-                        "internalType": "string",
+                        "internalType": "uint8",
                         "name": "jobSpotId",
-                        "type": "string"
+                        "type": "uint8"
                     }
                 ],
                 "name": "getJobReward",
@@ -174,20 +134,13 @@
                 "type": "function"
             },
             {
-                "inputs": [],
-                "name": "gridSize",
-                "outputs": [
+                "inputs": [
                     {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
+                        "internalType": "uint8",
+                        "name": "size",
+                        "type": "uint8"
                     }
                 ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
                 "name": "initialize",
                 "outputs": [],
                 "stateMutability": "nonpayable",
@@ -204,9 +157,9 @@
                 "name": "jobSpotIds",
                 "outputs": [
                     {
-                        "internalType": "string",
+                        "internalType": "uint8",
                         "name": "",
-                        "type": "string"
+                        "type": "uint8"
                     }
                 ],
                 "stateMutability": "view",
@@ -215,18 +168,13 @@
             {
                 "inputs": [
                     {
-                        "internalType": "string",
+                        "internalType": "uint8",
                         "name": "",
-                        "type": "string"
+                        "type": "uint8"
                     }
                 ],
                 "name": "jobSpots",
                 "outputs": [
-                    {
-                        "internalType": "string",
-                        "name": "UUID",
-                        "type": "string"
-                    },
                     {
                         "internalType": "uint256",
                         "name": "reward",
@@ -243,26 +191,6 @@
             },
             {
                 "inputs": [],
-                "name": "owner",
-                "outputs": [
-                    {
-                        "internalType": "address",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "renounceOwnership",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [],
                 "name": "rewardToken",
                 "outputs": [
                     {
@@ -272,37 +200,6 @@
                     }
                 ],
                 "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string[]",
-                        "name": "uuids",
-                        "type": "string[]"
-                    }
-                ],
-                "name": "setAllJobSpotUUIDs",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "jobSpotId",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "jobSpotUUID",
-                        "type": "string"
-                    }
-                ],
-                "name": "setJobSpotUUID",
-                "outputs": [],
-                "stateMutability": "nonpayable",
                 "type": "function"
             },
             {
@@ -321,19 +218,6 @@
             {
                 "inputs": [
                     {
-                        "internalType": "address",
-                        "name": "newOwner",
-                        "type": "address"
-                    }
-                ],
-                "name": "transferOwnership",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
                         "internalType": "uint256",
                         "name": "amount",
                         "type": "uint256"
@@ -347,10 +231,10 @@
         ];
 
     // Contract address (replace with the actual deployed contract address)
-    const contractAddress = '0x5fbdb2315678afecb367f032d93f642f64180aa3';
+    const contractAddress = '0xf745EA20b7dC2c63BC493B9E14539Fdf10d9e43A';
 
     // Web3 instance to connect to local Ethereum node (replace with your node URL if necessary)
-    const web3 = new Web3('http://localhost:8545');
+    const web3 = new Web3('https://rpc-amoy.polygon.technology/');
 
     // Connect to the deployed contract
     const contract = new web3.eth.Contract(contractABI, contractAddress);
@@ -363,13 +247,6 @@
                 console.log('Web3 is successfully connected to the local node.');
             } else {
                 console.error('Web3 is not connected.');
-            }
-
-            const accounts = await web3.eth.getAccounts();
-            if (accounts.length > 0) {
-                console.log(`Connected accounts: ${accounts}`);
-            } else {
-                console.error('No accounts found.');
             }
 
         } catch (error) {
@@ -393,22 +270,44 @@
         }
     }
 
-    // Function to draw job spots with rewards
+    // Function to draw job spots with rewards and update player scores
     async function drawJobSpots() {
         const jobSpots = await contract.methods.getAllJobSpots().call(); // Get all job spot IDs from contract
+        playerScores = {};  // Reset player scores before calculating them
 
-        for (let i = 0; i < jobSpots.length; i++) {
-            const jobSpotId = jobSpots[i];
+        const promises = jobSpots.map(async (jobSpotId) => {
             const jobSpotData = await contract.methods.jobSpots(jobSpotId).call(); // Fetch job spot data
-            const reward = await contract.methods.getJobReward(jobSpotId).call(); // Fetch reward amount
-            drawJobSpot(jobSpotId, reward, jobSpotData.collector);
-        }
+            // const reward = await contract.methods.getJobReward(jobSpotId).call(); // Fetch reward amount
+            drawJobSpot(parseInt(jobSpotId), parseInt(jobSpotData.reward) , jobSpotData.collector);
+
+            if (jobSpotData.collector && jobSpotData.collector !== '0x0000000000000000000000000000000000000000') {
+                if (!playerScores[jobSpotData.collector]) {
+                    playerScores[jobSpotData.collector] = {
+                        jobsCollected: 1,
+                        totalReward: parseInt(jobSpotData.reward)
+                    };
+                } else {
+                    playerScores[jobSpotData.collector].jobsCollected++;
+                    playerScores[jobSpotData.collector].totalReward += parseInt(jobSpotData.reward);
+                }
+            }
+        });
+
+        await Promise.all(promises);
+        updatePlayerScores();
+    }
+
+
+    // Function to convert an address into a hex color
+    function addressToColor(address) {
+        // Take the last 6 characters of the address and prepend '#' to make a hex color
+        return `#${address.slice(-6)}`;
     }
 
     // Function to draw a specific job spot on the grid
     function drawJobSpot(jobSpotId, reward, collector) {
-        const rowIndex = jobSpotId.charCodeAt(0) - 65; // Convert 'A' to 0, 'B' to 1, etc.
-        const colIndex = parseInt(jobSpotId[1]) - 1;
+        const rowIndex = Math.floor(jobSpotId / gridSize); // Row index
+        const colIndex = jobSpotId % gridSize; // Column index
 
         const x = colIndex * cellSize + cellSize / 2;
         const y = rowIndex * cellSize + cellSize / 2;
@@ -417,7 +316,8 @@
         if (!collector || collector === '0x0000000000000000000000000000000000000000') {
             ctx.fillStyle = '#a2a1a1'; // Gray if uncollected
         } else {
-            ctx.fillStyle = 'green'; // Green if collected
+            // Generate color based on the collector's address
+            ctx.fillStyle = addressToColor(collector);
         }
 
         ctx.beginPath();
@@ -433,7 +333,27 @@
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(`${formattedReward}`, x, y+2);
+
+        //Draw small text with job spot ID
+        ctx.font = '16px Arial';
+        ctx.fillText(`${jobSpotId}`, x, y-45);
+
     }
+
+    // Function to update and display the player scores
+    function updatePlayerScores() {
+        const playerScoresDiv = document.getElementById('playerScores');
+        playerScoresDiv.innerHTML = '';  // Clear existing scores
+
+        Object.keys(playerScores).forEach((player) => {
+            const scoreEntry = document.createElement('div');
+            scoreEntry.style.color = addressToColor(player);  // Color each player's score with their unique color
+            const formattedReward = (playerScores[player].totalReward / 10 ** 18).toFixed(0);  // Convert to Ether-like format
+            scoreEntry.textContent = `${player.slice(0, 6)}...: ${playerScores[player].jobsCollected} jobs collected, Total Reward: ${formattedReward} tokens`;
+            playerScoresDiv.appendChild(scoreEntry);
+        });
+    }
+
 
     // Draw the initial grid and fetch job data
     async function initialize() {
